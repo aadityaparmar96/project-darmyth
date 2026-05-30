@@ -1,0 +1,21 @@
+assistant:
+  name: Darmyth
+  model: llama-3.3-70b-versatile
+  max_history_turns: 6
+
+vision:
+  resolution: [640, 480]
+  mediapipe_complexity: 0
+  fps_cap: 15
+
+voice:
+  whisper_model: tiny
+  whisper_unload_after_sec: 30
+  tts_voice: en-US-GuyNeural
+
+memory:
+  notes_path: "data/notes/"
+  file_types: [".md", ".txt"]
+  exclude_folders: [".obsidian", "templates", "attachments"]
+  top_k_chunks: 3
+  db_path: memory_db/
