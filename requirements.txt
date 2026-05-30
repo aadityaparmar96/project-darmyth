@@ -1,0 +1,15 @@
+opencv-python-headless==4.11.0.86
+mediapipe==0.10.21
+faster-whisper==1.1.1
+openwakeword==0.6.0
+sounddevice==0.5.1
+edge-tts==6.1.19
+openai==1.66.5
+chromadb==0.5.23
+sentence-transformers==2.7.0
+pyautogui==0.9.54
+python-dotenv==1.0.1
+pyyaml==6.0.1
+psutil==6.1.1
+numpy==1.26.4
+watchdog==4.0.0
