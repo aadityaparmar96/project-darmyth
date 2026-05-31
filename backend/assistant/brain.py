@@ -9,6 +9,7 @@ import sys
 from openai import OpenAI
 from dotenv import load_dotenv
 import yaml
+from backend.assistant.router import route, INTENT_MAP
 
 # ── Load config ───────────────────────────────────────────────
 # Go up two levels from this file to find config/
@@ -83,6 +84,15 @@ def chat(user_message: str, context: str = "") -> str:
         Darmyth's response as a string
     """
     global conversation_history
+
+     # ── Route first — handle simple commands locally ──────────
+    result = route(user_message)
+    if result["handled"]:
+        if result["response"] == "CLEAR_MEMORY":
+            clear_history()
+            return "Memory cleared. Starting fresh."
+        return result["response"]
+    # ── Not handled locally — send to Groq ────────────────────
 
     # Inject RAG context if available
     if context:
