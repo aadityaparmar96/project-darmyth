@@ -114,7 +114,7 @@ if __name__ == "__main__":
     print("  S — save screenshot")
     print("  F — toggle FPS display\n")
 
-    cam = Camera()
+    cam = Camera(camera_index=0)
 
     if not cam.start():
         print("Could not start camera. Check if webcam is connected.")
