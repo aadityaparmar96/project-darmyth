@@ -9,7 +9,7 @@ vision:
   fps_cap: 15
 
 voice:
-  whisper_model: tiny
+  whisper_model: base
   whisper_unload_after_sec: 30
   tts_voice: en-US-GuyNeural
 
