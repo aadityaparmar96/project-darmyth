@@ -1,8 +1,6 @@
 # =============================================================
 #  Darmyth — backend/automation/cursor.py
-#  Index fingertip → screen cursor
-#  Active zone = center 60% of camera → full screen
-#  No freeze, no complex gestures
+#  Cursor controller — move, click, drag
 # =============================================================
 
 import pyautogui
@@ -16,19 +14,13 @@ SCREEN_W, SCREEN_H = pyautogui.size()
 
 class CursorController:
     def __init__(self,
-                 smoothing: float   = 0.15,
+                 smoothing: float   = 0.75,
                  active_zone: tuple = (0.2, 0.15, 0.8, 0.85)):
-        """
-        smoothing: 0=instant/jittery, 1=very smooth/laggy
-        active_zone: (x_min, y_min, x_max, y_max) normalised
-                     only this portion of camera maps to full screen
-                     smaller zone = less arm movement needed
-        """
         self.smoothing   = smoothing
         self.active_zone = active_zone
-
-        self._cur_x = SCREEN_W // 2
-        self._cur_y = SCREEN_H // 2
+        self._cur_x      = SCREEN_W // 2
+        self._cur_y      = SCREEN_H // 2
+        self._is_dragging = False
 
     def _map(self, nx: float, ny: float) -> tuple:
         x0, y0, x1, y1 = self.active_zone
@@ -43,20 +35,40 @@ class CursorController:
         self._cur_x = int(self._cur_x * s + tx * (1 - s))
         self._cur_y = int(self._cur_y * s + ty * (1 - s))
 
-    def process(self, gesture: str, triggered: bool, landmarks) -> None:
-        if landmarks is None:
-            return
+    def process(self, gesture: str, action: str,
+                triggered: bool, landmarks) -> str:
+        """
+        Returns action string for UI display.
+        """
+        if landmarks is None or not triggered:
+            return action
 
         tip = landmarks[8]   # index fingertip
+        tx, ty = self._map(tip.x, tip.y)
+        self._smooth(tx, ty)
 
-        if gesture == Gesture.POINT and triggered:
-            tx, ty = self._map(tip.x, tip.y)
-            self._smooth(tx, ty)
+        if action == "move":
             pyautogui.moveTo(self._cur_x, self._cur_y)
 
-        elif gesture == Gesture.PINCH_LEFT and triggered:
-            # Move to pinch position then click
-            tx, ty = self._map(tip.x, tip.y)
-            self._smooth(tx, ty)
+        elif action == "click":
             pyautogui.click(self._cur_x, self._cur_y)
             print(f"[cursor] Click → ({self._cur_x}, {self._cur_y})")
+
+        elif action == "drag_start":
+            pyautogui.mouseDown(self._cur_x, self._cur_y)
+            self._is_dragging = True
+            print(f"[cursor] Drag start → ({self._cur_x}, {self._cur_y})")
+
+        elif action == "drag_move":
+            pyautogui.moveTo(self._cur_x, self._cur_y)
+
+        elif action == "drag_end":
+            pyautogui.mouseUp()
+            self._is_dragging = False
+            print(f"[cursor] Drag end → ({self._cur_x}, {self._cur_y})")
+
+        return action
+
+    @property
+    def is_dragging(self) -> bool:
+        return self._is_dragging
