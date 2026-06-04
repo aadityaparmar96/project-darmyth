@@ -21,7 +21,7 @@ user32 = ctypes.windll.user32
 
 
 # ── Generate glowing ring cursor as .cur file ─────────────────
-def _create_glowing_ring_cur(size: int = 32,
+def _create_glowing_ring_cur(size: int = 24,
                               ring_color: tuple = (0, 220, 255),
                               glow_color: tuple = (0, 100, 180)) -> bytes:
     """
