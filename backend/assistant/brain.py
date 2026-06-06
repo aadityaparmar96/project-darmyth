@@ -10,6 +10,8 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import yaml
 from backend.assistant.router import route, INTENT_MAP
+from backend.rag.retriever import retrieve, index_vault
+
 
 # ── Load config ───────────────────────────────────────────────
 # Go up two levels from this file to find config/
@@ -95,6 +97,8 @@ def chat(user_message: str, context: str = "") -> str:
     # ── Not handled locally — send to Groq ────────────────────
 
     # Inject RAG context if available
+    if not context: 
+        context = retrieve(user_message)
     if context:
         full_message = f"[Relevant context from your notes]\n{context}\n\n[User message]\n{user_message}"
     else:
@@ -171,6 +175,8 @@ if __name__ == "__main__":
         "What can you help me with?",
         "Remember this — my name is Aaditya.",
         "What's my name?",
+        "How many Archons were there in the Kael Chronicle?",
+        "What happens in Chapter 14 in Kael Chronicle?",
     ]
 
     for msg in test_messages:

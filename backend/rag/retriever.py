@@ -4,6 +4,25 @@
 #  Formats chunks into a clean context string
 # =============================================================
 
+# =============================================================
+#  Darmyth — backend/rag/retriever.py
+#  Retrieves relevant context from vault for brain.py
+#  Includes keyword boost for chapter/file specific queries
+# =============================================================
+
+# =============================================================
+#  Darmyth — backend/rag/retriever.py
+#  Retrieves relevant context from vault for brain.py
+#  Includes keyword boost for chapter/file specific queries
+# =============================================================
+
+# =============================================================
+#  Darmyth — backend/rag/retriever.py
+#  Retrieves relevant context from vault for brain.py
+#  Chapter queries use direct filename filter, not semantic search
+# =============================================================
+
+import re
 import yaml
 from pathlib import Path
 from backend.rag.store import VectorStore
@@ -33,41 +52,44 @@ def retrieve(query: str,
              min_score: float = 0.35) -> str:
     """
     Find relevant notes for a query and return as context string.
-
-    Args:
-        query: user's question or message
-        top_k: number of chunks to retrieve
-        min_score: minimum similarity score (0-1) to include
-
-    Returns:
-        Formatted context string, or empty string if nothing relevant
+    Chapter queries bypass semantic search and use direct filename filter.
     """
-    store   = get_store()
-    results = store.search(query, top_k=top_k)
+    store = get_store()
 
-    # Filter by minimum relevance score
-    relevant = [r for r in results if r["score"] >= min_score]
+    # ── Chapter keyword — direct filename filter ──────────────
+    chapter_match = re.search(r'chapter\s+(\d+)', query, re.IGNORECASE)
+    if chapter_match:
+        chapter_num = chapter_match.group(1)
+        results = store.search_by_source(f"Chapter {chapter_num}", top_k=top_k)
+        if results:
+            print(f"[retriever] Chapter {chapter_num} direct match — {len(results)} chunks")
+        else:
+            # Fallback to semantic if no direct match
+            print(f"[retriever] No direct match for Chapter {chapter_num}, falling back to semantic")
+            candidates = store.search(query, top_k=top_k * 2)
+            results    = [r for r in candidates if r["score"] >= min_score][:top_k]
+    else:
+        # Normal semantic search
+        candidates = store.search(query, top_k=top_k * 3)
+        results    = [r for r in candidates if r["score"] >= min_score][:top_k]
 
-    if not relevant:
+    if not results:
         return ""
 
-    # Format into clean context block
     lines = []
-    for r in relevant:
+    for r in results:
         lines.append(f"[From: {r['source']}]\n{r['text']}")
 
     context = "\n\n".join(lines)
-    print(f"[retriever] Found {len(relevant)} relevant chunks for: '{query[:50]}'")
+    print(f"[retriever] Found {len(results)} chunks for: '{query[:50]}'")
     return context
 
 
 def index_vault(force: bool = False) -> int:
-    """Index or re-index the Obsidian vault."""
     return get_store().index_vault(force=force)
 
 
 def update_file(filepath: str) -> None:
-    """Update a single file in the vector store."""
     get_store().update_file(filepath)
 
 
@@ -75,22 +97,21 @@ def update_file(filepath: str) -> None:
 if __name__ == "__main__":
     print("Testing Darmyth retriever...\n")
 
-    print("Indexing vault...")
     count = index_vault()
     print(f"Indexed {count} chunks\n")
 
     queries = [
-        "What was the name of the Hegemony that Kael destroyed?",
-        "What is Panama's view on the policy?",
-        "What does india think of R2P?",
-        "What is the weather today?",   # should return nothing relevant
+        "What is Aaditya working on?",
+        "What happens in Chapter 14?",
+        "What does India think of R2P?",
+        "What is the weather today?",
     ]
 
     for q in queries:
         print(f"Q: {q}")
         context = retrieve(q)
         if context:
-            print(f"Context found:\n{context[:200]}...")
+            print(f"Context:\n{context[:200]}...")
         else:
             print("No relevant context found.")
         print()

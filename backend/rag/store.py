@@ -3,6 +3,16 @@
 #  ChromaDB vector store — persists embeddings locally
 # =============================================================
 
+# =============================================================
+#  Darmyth — backend/rag/store.py
+#  ChromaDB vector store — persists embeddings locally
+# =============================================================
+
+# =============================================================
+#  Darmyth — backend/rag/store.py
+#  ChromaDB vector store — persists embeddings locally
+# =============================================================
+
 import yaml
 import chromadb
 from pathlib import Path
@@ -39,7 +49,6 @@ class VectorStore:
             print(f"[store] Already indexed ({existing} chunks). Use force=True to re-index.")
             return existing
 
-        # Clear existing
         if existing > 0:
             self._client.delete_collection(self.COLLECTION_NAME)
             self._collection = self._client.get_or_create_collection(
@@ -47,7 +56,7 @@ class VectorStore:
                 metadata={"hnsw:space": "cosine"}
             )
 
-        docs   = read_vault()
+        docs = read_vault()
         if not docs:
             print("[store] No notes found to index.")
             return 0
@@ -55,7 +64,6 @@ class VectorStore:
         chunks = chunk_all(docs)
         texts, embeddings, metas, ids = embed_chunks(chunks)
 
-        # Store in batches of 100
         batch_size = 100
         for i in range(0, len(texts), batch_size):
             self._collection.add(
@@ -88,7 +96,6 @@ class VectorStore:
 
         texts, embeddings, metas, ids = embed_chunks(chunks)
 
-        # Delete old chunks for this file
         try:
             existing = self._collection.get(where={"source": path.name})
             if existing["ids"]:
@@ -96,7 +103,6 @@ class VectorStore:
         except Exception:
             pass
 
-        # Add new chunks
         self._collection.add(
             documents=texts,
             embeddings=embeddings,
@@ -127,6 +133,29 @@ class VectorStore:
 
         return chunks
 
+    def search_by_source(self, filename_keyword: str, top_k: int = 5) -> list[dict]:
+        """
+        Filter chunks by source filename — pure Python filter.
+        Works with all ChromaDB versions.
+        """
+        try:
+            all_data = self._collection.get(include=["documents", "metadatas"])
+            chunks   = []
+            for i, doc in enumerate(all_data["documents"]):
+                source = all_data["metadatas"][i]["source"]
+                if filename_keyword.lower() in source.lower():
+                    chunks.append({
+                        "text":   doc,
+                        "source": source,
+                        "score":  1.0,
+                    })
+                    if len(chunks) >= top_k:
+                        break
+            return chunks
+        except Exception as e:
+            print(f"[store] search_by_source error: {e}")
+            return []
+
     def count(self) -> int:
         return self._collection.count()
 
@@ -141,9 +170,9 @@ if __name__ == "__main__":
     print(f"\nTotal chunks: {store.count()}\n")
 
     test_queries = [
-        "What is Kael's home planet?", 
-        "What does India think about the policy?", 
-        "Where did kael destroy the gem?",
+        "What is Aaditya working on?",
+        "What programming language does Aaditya use?",
+        "Tell me about ShelterSync",
     ]
 
     for query in test_queries:
