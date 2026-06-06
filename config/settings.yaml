@@ -14,7 +14,7 @@ voice:
   tts_voice: en-US-GuyNeural
 
 memory:
-  notes_path: "data/notes/"
+  notes_path: "C:/Users/AADITYA/Documents/DarmythBrain/"
   file_types: [".md", ".txt"]
   exclude_folders: [".obsidian", "templates", "attachments"]
   top_k_chunks: 3
