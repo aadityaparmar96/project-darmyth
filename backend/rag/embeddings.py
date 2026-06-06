@@ -70,8 +70,8 @@ def read_vault(notes_path: Path = NOTES_PATH) -> list[dict]:
 
 # ── Chunking ──────────────────────────────────────────────────
 def chunk_document(doc: dict,
-                   chunk_size: int = 300,
-                   overlap: int = 50) -> list[dict]:
+                   chunk_size: int = 250,
+                   overlap: int = 30) -> list[dict]:
     """
     Split a document into overlapping chunks.
     Small chunks = more precise retrieval.

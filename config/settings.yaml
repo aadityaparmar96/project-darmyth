@@ -17,5 +17,5 @@ memory:
   notes_path: "C:/Users/AADITYA/Documents/DarmythBrain/"
   file_types: [".md", ".txt"]
   exclude_folders: [".obsidian", "templates", "attachments"]
-  top_k_chunks: 3
+  top_k_chunks: 5
   db_path: memory_db/
