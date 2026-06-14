@@ -2,8 +2,6 @@
 #  Darmyth — backend/assistant/router.py
 #  Intent router — handles simple commands locally,
 #  only sends complex queries to Groq API.
-#  
-#  Flow: user input → router → local action OR brain.py
 # =============================================================
 
 import os
@@ -14,9 +12,6 @@ from datetime import datetime
 import psutil
 
 # ── Intent categories ─────────────────────────────────────────
-# Each intent has a list of trigger keywords/phrases
-# Order matters — more specific phrases first
-
 INTENT_MAP = {
     # ── Time & Date ───────────────────────────────────────────
     "get_time": [
@@ -46,7 +41,7 @@ INTENT_MAP = {
         "volume down", "decrease volume", "quieter", "turn down", "lower volume"
     ],
     "volume_mute": [
-        "mute", "mute volume", "silence", "shut up"
+        "mute", "mute volume", "silence"
     ],
 
     # ── App launching ─────────────────────────────────────────
@@ -68,9 +63,36 @@ INTENT_MAP = {
         "open cmd", "terminal"
     ],
 
+    # ── Web URLs ──────────────────────────────────────────────
+    "open_url": [
+        "open youtube", "open google", "open gmail", "open github",
+        "open instagram", "open twitter", "open facebook", "open netflix",
+        "go to youtube", "go to google", "open in chrome", "open in browser",
+        "open spotify", "open reddit", "open twitch"
+    ],
+
     # ── Web search ────────────────────────────────────────────
     "search_web": [
         "search for", "google", "look up", "search the web", "find online"
+    ],
+
+    # ── Stylus control ────────────────────────────────────────
+    "stylus_on": [
+        "activate stylus", "enable stylus", "start stylus",
+        "turn on stylus", "hand control on", "gesture mode",
+        "start hand tracking", "enable hand control", "stylus on"
+    ],
+    "stylus_off": [
+        "close stylus", "disable stylus", "stop stylus",
+        "turn off stylus", "hand control off", "exit gesture mode",
+        "stop hand tracking", "deactivate stylus", "stylus off"
+    ],
+
+    # ── Shutdown ──────────────────────────────────────────────
+    "shutdown": [
+        "goodbye darmyth", "bye darmyth", "shutdown darmyth",
+        "exit darmyth", "quit darmyth", "turn off darmyth",
+        "sleep darmyth"
     ],
 
     # ── Darmyth control ───────────────────────────────────────
@@ -93,26 +115,30 @@ APP_PATHS = {
     "open_terminal":   "start powershell",
 }
 
-# ── Volume control (Windows) ──────────────────────────────────
+# ── URL map ───────────────────────────────────────────────────
+URL_MAP = {
+    "youtube":   "https://youtube.com",
+    "google":    "https://google.com",
+    "gmail":     "https://gmail.com",
+    "github":    "https://github.com",
+    "instagram": "https://instagram.com",
+    "twitter":   "https://twitter.com",
+    "netflix":   "https://netflix.com",
+    "facebook":  "https://facebook.com",
+    "spotify":   "https://open.spotify.com",
+    "reddit":    "https://reddit.com",
+    "twitch":    "https://twitch.tv",
+}
+
+# ── Volume control ────────────────────────────────────────────
 def _change_volume(action: str) -> str:
-    """Control system volume using PowerShell."""
     try:
         if action == "up":
-            # Press volume up key 5 times
-            script = """
-            $wsh = New-Object -ComObject WScript.Shell
-            1..5 | ForEach-Object { $wsh.SendKeys([char]175) }
-            """
+            script = "$wsh = New-Object -ComObject WScript.Shell; 1..5 | ForEach-Object { $wsh.SendKeys([char]175) }"
         elif action == "down":
-            script = """
-            $wsh = New-Object -ComObject WScript.Shell
-            1..5 | ForEach-Object { $wsh.SendKeys([char]174) }
-            """
+            script = "$wsh = New-Object -ComObject WScript.Shell; 1..5 | ForEach-Object { $wsh.SendKeys([char]174) }"
         elif action == "mute":
-            script = """
-            $wsh = New-Object -ComObject WScript.Shell
-            $wsh.SendKeys([char]173)
-            """
+            script = "$wsh = New-Object -ComObject WScript.Shell; $wsh.SendKeys([char]173)"
         subprocess.run(["powershell", "-Command", script],
                       capture_output=True, timeout=5)
         return {"up": "Volume increased.", "down": "Volume decreased.",
@@ -123,33 +149,27 @@ def _change_volume(action: str) -> str:
 
 # ── Intent handlers ───────────────────────────────────────────
 def _handle_intent(intent: str, user_input: str) -> str:
-    """Execute the action for a detected intent."""
 
     # Time & Date
     if intent == "get_time":
         return f"It's {datetime.now().strftime('%I:%M %p')}."
-
     if intent == "get_date":
         return f"Today is {datetime.now().strftime('%A, %B %d, %Y')}."
 
     # System stats
     if intent == "get_ram":
         ram = psutil.virtual_memory()
-        used  = ram.used  / (1024**3)
+        used = ram.used / (1024**3)
         total = ram.total / (1024**3)
-        pct   = ram.percent
-        return f"RAM: {used:.1f}GB used of {total:.1f}GB ({pct}% full)."
-
+        return f"RAM: {used:.1f}GB used of {total:.1f}GB ({ram.percent}% full)."
     if intent == "get_cpu":
-        cpu = psutil.cpu_percent(interval=1)
-        return f"CPU usage: {cpu}%."
-
+        return f"CPU usage: {psutil.cpu_percent(interval=1)}%."
     if intent == "get_battery":
         battery = psutil.sensors_battery()
         if battery:
             status = "charging" if battery.power_plugged else "on battery"
             return f"Battery: {battery.percent:.0f}% ({status})."
-        return "No battery detected — probably a desktop."
+        return "No battery detected."
 
     # Volume
     if intent == "volume_up":
@@ -168,9 +188,18 @@ def _handle_intent(intent: str, user_input: str) -> str:
         except Exception as e:
             return f"Couldn't open app: {e}"
 
+    # URL opening
+    if intent == "open_url":
+        text = user_input.lower()
+        for site, url in URL_MAP.items():
+            if site in text:
+                webbrowser.open(url)
+                return f"Opening {site.title()}."
+        webbrowser.open("https://google.com")
+        return "Opening browser."
+
     # Web search
     if intent == "search_web":
-        # Extract search query — remove trigger words
         query = user_input.lower()
         for trigger in INTENT_MAP["search_web"]:
             query = query.replace(trigger, "").strip()
@@ -180,9 +209,19 @@ def _handle_intent(intent: str, user_input: str) -> str:
             return f"Searching for '{query}'."
         return "What do you want me to search for?"
 
+    # Stylus control — special signals handled by main.py
+    if intent == "stylus_on":
+        return "STYLUS_ON"
+    if intent == "stylus_off":
+        return "STYLUS_OFF"
+
+    # Shutdown — special signal handled by main.py
+    if intent == "shutdown":
+        return "SHUTDOWN"
+
     # Darmyth control
     if intent == "clear_memory":
-        return "CLEAR_MEMORY"  # Special signal — brain.py handles this
+        return "CLEAR_MEMORY"
 
     if intent == "help":
         return (
@@ -191,29 +230,25 @@ def _handle_intent(intent: str, user_input: str) -> str:
             "• System info — 'cpu usage', 'ram usage', 'battery level'\n"
             "• Volume — 'volume up', 'volume down', 'mute'\n"
             "• Apps — 'open chrome', 'open notepad', 'open calculator'\n"
+            "• Websites — 'open youtube', 'open github', 'open spotify'\n"
             "• Search — 'search for Python tutorials'\n"
+            "• Stylus — 'activate stylus', 'close stylus'\n"
             "• Memory — 'clear memory'\n"
+            "• Shutdown — 'goodbye Darmyth'\n"
             "Anything else goes to my AI brain."
         )
 
-    return None  # No handler found — send to brain
+    return None
 
 
 # ── Main routing function ─────────────────────────────────────
 def route(user_input: str) -> dict:
     """
     Route user input to the right handler.
-
-    Returns a dict:
-        {
-            "intent":   str,   # detected intent or "llm"
-            "handled":  bool,  # True = local, False = send to brain.py
-            "response": str    # response if handled locally, else None
-        }
+    Returns {"intent": str, "handled": bool, "response": str}
     """
     text = user_input.lower().strip()
 
-    # Check each intent
     for intent, triggers in INTENT_MAP.items():
         for trigger in triggers:
             if trigger in text:
@@ -226,7 +261,6 @@ def route(user_input: str) -> dict:
                         "response": response
                     }
 
-    # Nothing matched — send to Groq
     print(f"[router] No intent matched → sending to brain")
     return {
         "intent":   "llm",
@@ -244,12 +278,13 @@ if __name__ == "__main__":
         "Check my RAM usage",
         "Volume up please",
         "Open calculator",
+        "Open youtube",
         "Search for Python tutorials",
-        "What is the meaning of life?",    # → should go to LLM
-        "Explain quantum computing",        # → should go to LLM
-        "What's the battery level?",
-        "Clear memory",
-        "help",
+        "Activate stylus",
+        "Close stylus",
+        "Goodbye Darmyth",
+        "What is the meaning of life?",
+        "Help",
     ]
 
     for user_input in test_inputs:
@@ -259,5 +294,5 @@ if __name__ == "__main__":
             print(f"Darmyth: {result['response']}")
         else:
             print(f"You:     {user_input}")
-            print(f"Darmyth: [→ sending to Groq API]")
+            print(f"Darmyth: [→ sending to Groq]")
         print("-" * 50)
