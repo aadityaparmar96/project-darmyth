@@ -10,6 +10,8 @@ import sys
 import os
 import cv2
 
+from backend.rag.obsidian_control import handle_obsidian_command
+
 # ── Vision ────────────────────────────────────────────────────
 from backend.vision.camera   import Camera
 from backend.vision.hands    import HandTracker
@@ -208,6 +210,13 @@ def _do_activation():
 
 def _process(text: str) -> str:
     """Route text to the right handler."""
+    result = route(text)
+    # Check Obsidian commands first — instant, no API
+    obsidian_result = handle_obsidian_command(text)
+    if obsidian_result:
+        return obsidian_result
+
+    # Then router
     result = route(text)
 
     if result["handled"]:
