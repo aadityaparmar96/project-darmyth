@@ -14,7 +14,7 @@ SCREEN_W, SCREEN_H = pyautogui.size()
 
 class CursorController:
     def __init__(self,
-                 smoothing: float   = 0.75,
+                 smoothing: float   = 0.15,
                  active_zone: tuple = (0.2, 0.15, 0.8, 0.85)):
         self.smoothing   = smoothing
         self.active_zone = active_zone

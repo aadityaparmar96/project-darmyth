@@ -31,7 +31,7 @@ class Camera:
     to get the latest frame without blocking.
     """
 
-    def __init__(self, camera_index: int = 0):
+    def __init__(self, camera_index: int = 1):
         self.camera_index = camera_index
         self.cap          = None
         self.frame        = None
