@@ -32,7 +32,7 @@ if __name__ == "__main__":
         entry_grace=0.4,
         stable_needed=3
     )
-    cursor        = CursorController(smoothing=0.85,
+    cursor        = CursorController(smoothing=0.90,
                                      active_zone=(0.2, 0.15, 0.8, 0.85))
     cursor_style  = CursorManager()
 
