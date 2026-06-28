@@ -49,7 +49,7 @@ def get_store() -> VectorStore:
 # ── Retriever ─────────────────────────────────────────────────
 def retrieve(query: str,
              top_k: int = TOP_K,
-             min_score: float = 0.35) -> str:
+             min_score: float = 0.40) -> str:
     """
     Find relevant notes for a query and return as context string.
     Chapter queries bypass semantic search and use direct filename filter.
