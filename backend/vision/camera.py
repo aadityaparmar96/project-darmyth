@@ -31,7 +31,7 @@ class Camera:
     to get the latest frame without blocking.
     """
 
-    def __init__(self, camera_index: int = 0):
+    def __init__(self, camera_index: int = 1):
         self.camera_index = camera_index
         self.cap          = None
         self.frame        = None
@@ -114,7 +114,7 @@ if __name__ == "__main__":
     print("  S — save screenshot")
     print("  F — toggle FPS display\n")
 
-    cam = Camera(camera_index=0)
+    cam = Camera(camera_index=1)
 
     if not cam.start():
         print("Could not start camera. Check if webcam is connected.")
