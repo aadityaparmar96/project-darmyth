@@ -32,7 +32,7 @@ class Camera:
     """
 
 
-    #CAMERA INDEX TO SWITCH TO BETTER CAMERAS
+
 
     def __init__(self, camera_index: int = 1):
         self.camera_index = camera_index
